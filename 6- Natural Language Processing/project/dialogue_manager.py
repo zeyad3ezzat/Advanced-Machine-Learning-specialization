@@ -3,7 +3,9 @@ from sklearn.metrics.pairwise import pairwise_distances_argmin
 
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer
+
 from utils import *
+from chatterbot.trainers import ListTrainer
 
 
 class ThreadRanker(object):
@@ -24,13 +26,20 @@ class ThreadRanker(object):
 
         # HINT: you have already implemented a similar routine in the 3rd assignment.
 
-        question_vec = question_to_vec(question, embeddings, dim)[np.newaxis, :]
-#### YOUR CODE HERE ####
+        question_vec = question_to_vec(question, self.word_embeddings, self.embeddings_dim)[np.newaxis, :]
 
+#### YOUR CODE HERE ####
+        # print(thread_ids.column.values)
         best_thread = pairwise_distances_argmin(question_vec, thread_embeddings, metric='cosine')[0]
+        # print(question_vec.shape)
+        # print(thread_embeddings.shape)
+        # print(best_thread)
+        # print(type(thread_ids))
+        # print(thread_ids)
+
  #### YOUR CODE HERE ####
         
-        return thread_ids[best_thread]
+        return thread_ids.values[best_thread]
 
 
 class DialogueManager(object):
@@ -70,7 +79,19 @@ class DialogueManager(object):
 
         # Get a response to an input statement
         # chatbot.get_response("Hello, how are you today?")
-        self.chitchat_bot=ChatBot('Ron Obvious')
+        # trainer = ChatterBotCorpusTrainer(bot)
+
+        # Train the chatbot based on the english corpus
+        # trainer.train("chatterbot.corpus.english")
+        # trainer = ChatterBotCorpusTrainer(bot)
+
+# Train the chatbot based on the english corpus
+        # trainer.train("chatterbot.corpus.english")
+        # chatbot.trainer.export_for_training('./export.yml')
+        bot=ChatBot('Ron Obvious')
+
+        self.chitchat_bot=bot
+
 
         # remove this when you're done
         # raise NotImplementedError(
@@ -86,19 +107,24 @@ class DialogueManager(object):
         
         prepared_question = text_prepare(question)#### YOUR CODE HERE ####
         features = self.tfidf_vectorizer.transform([prepared_question])#### YOUR CODE HERE ####
-        intent = self.intent_recognizer.predict(features)#### YOUR CODE HERE ####
+        intent = self.intent_recognizer.predict(features)[0]#### YOUR CODE HERE ####
         # Chit-chat part:   
         if intent == 'dialogue':
-            # Pass question to chitchat_bot to generate a response.       
+
+            # Pass question to chitchat_bot to generate a response.  
+  #           trainer = ListTrainer(self.chitchat_bot)
+  # # Train the chatbot based on the english corpus
+  #           trainer.train(prepared_question) 
+
             response = self.chitchat_bot.get_response(prepared_question)
             return response
         
         # Goal-oriented part:
         else:        
             # Pass features to tag_classifier to get predictions.
-            tag = self.tag_classifier.predict(features)#### YOUR CODE HERE ####
+            tag = self.tag_classifier.predict(features)[0]#### YOUR CODE HERE ####
             
             # Pass prepared_question to thread_ranker to get predictions.
             thread_id = self.thread_ranker.get_best_thread( prepared_question, tag)#### YOUR CODE HERE ####
-            
+
             return self.ANSWER_TEMPLATE % (tag, thread_id)
